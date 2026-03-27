@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Yellow folder -->
+  <path d="M2 8 L2 26 Q2 28 4 28 L28 28 Q30 28 30 26 L30 12 Q30 10 28 10 L16 10 L13 6 Q12 5 11 5 L4 5 Q2 5 2 8Z" fill="#ecb00a"/>
+  <path d="M2 12 L30 12 L30 26 Q30 28 28 28 L4 28 Q2 28 2 26Z" fill="#f5c623"/>
+  <!-- Tab highlight -->
+  <path d="M2 8 L2 12 L14 12 L16 10 L13 6 Q12 5 11 5 L4 5 Q2 5 2 8Z" fill="#d4a00a"/>
+</svg>

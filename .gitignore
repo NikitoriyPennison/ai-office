@@ -1,0 +1,10 @@
+node_modules/
+.next/
+data/database.sqlite*
+data/.sync-state.json
+config/office.json
+/tmp/
+*.log
+.DS_Store
+.env
+data/.push-activity-state.json
