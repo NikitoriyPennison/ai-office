@@ -117,62 +117,60 @@ export default function StreamPage() {
 
   return (
     <div className="h-screen flex flex-col bg-[#0a0a12]">
-      {/* Header — office style */}
-      <header className="h-11 bg-[#0f0f0f] border-b border-[#2a2a2a] flex items-center justify-between px-6 shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="text-lg">📁</span>
-          <h1 className="text-base font-bold tracking-wider text-white">OpenClaw <span className="text-[#ecb00a]">Content Factory</span></h1>
+      {/* Header — responsive */}
+      <header className="h-auto min-h-[44px] bg-[#0f0f0f] border-b border-[#2a2a2a] flex flex-wrap items-center justify-between px-3 md:px-6 py-1.5 shrink-0 gap-2">
+        <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+          <span className="text-lg hidden sm:inline">📁</span>
+          <h1 className="text-sm md:text-base font-bold tracking-wider text-white">
+            <span className="hidden sm:inline">OpenClaw </span>
+            <span className="text-[#ecb00a]">AI Office</span>
+          </h1>
           <span className="text-[10px] text-[#9ca3af] border border-[#2a2a2a] px-1.5 py-0.5 rounded">LIVE</span>
-          <div className="flex items-center gap-1 ml-4">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setActiveRoom("main")}
-              className={`text-[11px] px-3 py-1 rounded transition-colors cursor-pointer ${
+              className={`text-[10px] md:text-[11px] px-2 md:px-3 py-1 rounded transition-colors cursor-pointer ${
                 activeRoom === "main"
                   ? "bg-[#ecb00a]/20 text-[#ecb00a] border border-[#ecb00a]/30"
                   : "text-[#6b7280] hover:text-[#9ca3af] border border-transparent"
               }`}
             >
-              🏢 Общий зал
+              🏢 <span className="hidden sm:inline">Общий </span>зал
             </button>
             <button
               onClick={() => setActiveRoom("boss")}
-              className={`text-[11px] px-3 py-1 rounded transition-colors cursor-pointer ${
+              className={`text-[10px] md:text-[11px] px-2 md:px-3 py-1 rounded transition-colors cursor-pointer ${
                 activeRoom === "boss"
                   ? "bg-[#ecb00a]/20 text-[#ecb00a] border border-[#ecb00a]/30"
                   : "text-[#6b7280] hover:text-[#9ca3af] border border-transparent"
               }`}
             >
-              👔 Кабинет главного
+              👔 <span className="hidden sm:inline">Кабинет</span>
             </button>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Token stats — running counter */}
+        <div className="flex items-center gap-2 md:gap-3">
           <span className="text-[10px] text-[#9ca3af] font-mono">
-            {agents.length} агентов • {onlineAgents.length} онлайн
+            {agents.length}<span className="hidden sm:inline"> агентов</span> • {onlineAgents.length}<span className="hidden sm:inline"> онлайн</span>
           </span>
-          <span className="text-[10px] text-[#ecb00a] font-mono tabular-nums">
+          <span className="text-[10px] text-[#ecb00a] font-mono tabular-nums hidden sm:inline">
             {displayTokens > 0 ? `${(displayTokens / 1000).toFixed(1)}k tokens` : "—"}
-          </span>
-          <span className="text-[10px] text-green-400/70 font-mono">
-            {tokenCost > 0 ? `$${tokenCost.toFixed(2)}` : ""}
           </span>
           <span className="text-xs text-green-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-green-400 rounded-full inline-block animate-pulse" />
           </span>
-          <a
-            href={branding.website || "#"}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-2 text-[11px] font-semibold bg-[#ecb00a] hover:bg-[#d4a00a] text-[#0a0a12] px-3 py-1 rounded transition-colors"
+          {/* Mobile sidebar toggle */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="md:hidden text-[#9ca3af] hover:text-white text-lg cursor-pointer"
           >
-            {(branding.website || "").replace("https://", "")} →
-          </a>
+            {sidebarOpen ? "✕" : "☰"}
+          </button>
         </div>
       </header>
 
-      {/* Main: Office (left, big) + Feed (right column) */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Main: Office + Feed */}
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Office — takes most of the space */}
         <main className="flex-1 relative overflow-hidden flex items-center justify-center bg-[#0a0a12]">
           <div className="w-full h-full select-none">
@@ -193,21 +191,31 @@ export default function StreamPage() {
             </span>
           </div>
 
-          {/* Admin controls — only for logged-in users */}
+          {/* Admin controls */}
           {user && (
             <div className="absolute bottom-3 right-3 flex gap-2 pointer-events-auto z-10">
               <button aria-label="action" onClick={() => officeRef.current?.triggerAllMeeting()}
                 className="text-[10px] bg-[#ecb00a]/20 hover:bg-[#ecb00a]/40 text-[#ecb00a] border border-[#ecb00a]/30 px-3 py-1.5 rounded backdrop-blur transition-colors cursor-pointer"
               >
-                🤝 Собрать всех
+                🤝 <span className="hidden sm:inline">Собрать всех</span>
               </button>
             </div>
           )}
         </main>
 
-        {/* Right sidebar — Agent list + Live Feed */}
-        {/* Hidden on mobile by default, toggled via sidebarOpen */}
-        <aside className="w-80 bg-[#0f0f0f] border-l border-[#2a2a2a] flex flex-col shrink-0 overflow-hidden hidden md:flex">
+        {/* Mobile sidebar backdrop */}
+        {sidebarOpen && (
+          <div className="md:hidden absolute inset-0 bg-black/50 z-20" onClick={() => setSidebarOpen(false)} />
+        )}
+
+        {/* Right sidebar — responsive: overlay on mobile, static on tablet+desktop */}
+        <aside className={`
+          ${sidebarOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"}
+          fixed md:static right-0 top-0 h-full z-30 md:z-auto
+          w-72 sm:w-80 bg-[#0f0f0f] border-l border-[#2a2a2a]
+          flex flex-col shrink-0 overflow-hidden
+          transition-transform duration-300 ease-in-out
+        `}>
           {/* Stream mode — no interactive buttons */}
 
           {/* Agent list */}
