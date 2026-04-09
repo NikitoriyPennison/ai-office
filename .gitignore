@@ -8,3 +8,6 @@ config/office.json
 .DS_Store
 .env
 data/.push-activity-state.json
+content/videos/
+content/audio/
+content/images/

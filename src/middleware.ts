@@ -16,6 +16,7 @@ const PUBLIC_PATHS = [
   "/api/queue/",             // agent task queue
   "/api/agents/registry",    // agent list
   "/api/chains",             // workflow chains
+  "/api/dashboard",
   "/api/health",
   "/favicon.svg",
   "/_next",

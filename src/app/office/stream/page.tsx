@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import { useAgentsStore } from "@/stores/agentsStore";
 import { PixelOffice } from "@/components/office/PixelOffice";
+import { BossOffice } from "@/components/office/BossOffice";
 
 interface ActivityItem {
   id: string;
@@ -24,6 +25,7 @@ export default function StreamPage() {
   const [feed, setFeed] = useState<ActivityItem[]>([]);
   const [crtEnabled, setCrtEnabled] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeRoom, setActiveRoom] = useState<"main" | "boss">("main");
   const [tokenCount, setTokenCount] = useState(0);
   const [tokenCost, setTokenCost] = useState(0);
   const [displayTokens, setDisplayTokens] = useState(0);
@@ -121,6 +123,28 @@ export default function StreamPage() {
           <span className="text-lg">📁</span>
           <h1 className="text-base font-bold tracking-wider text-white">OpenClaw <span className="text-[#ecb00a]">Content Factory</span></h1>
           <span className="text-[10px] text-[#9ca3af] border border-[#2a2a2a] px-1.5 py-0.5 rounded">LIVE</span>
+          <div className="flex items-center gap-1 ml-4">
+            <button
+              onClick={() => setActiveRoom("main")}
+              className={`text-[11px] px-3 py-1 rounded transition-colors cursor-pointer ${
+                activeRoom === "main"
+                  ? "bg-[#ecb00a]/20 text-[#ecb00a] border border-[#ecb00a]/30"
+                  : "text-[#6b7280] hover:text-[#9ca3af] border border-transparent"
+              }`}
+            >
+              🏢 Общий зал
+            </button>
+            <button
+              onClick={() => setActiveRoom("boss")}
+              className={`text-[11px] px-3 py-1 rounded transition-colors cursor-pointer ${
+                activeRoom === "boss"
+                  ? "bg-[#ecb00a]/20 text-[#ecb00a] border border-[#ecb00a]/30"
+                  : "text-[#6b7280] hover:text-[#9ca3af] border border-transparent"
+              }`}
+            >
+              👔 Кабинет главного
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           {/* Token stats — running counter */}
@@ -151,8 +175,13 @@ export default function StreamPage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Office — takes most of the space */}
         <main className="flex-1 relative overflow-hidden flex items-center justify-center bg-[#0a0a12]">
-          <div className="w-full h-full pointer-events-none select-none">
-            <PixelOffice ref={officeRef} agents={agents} className="w-full h-full" />
+          <div className="w-full h-full select-none">
+            <div className={activeRoom === "main" ? "w-full h-full pointer-events-none" : "hidden"}>
+              <PixelOffice ref={officeRef} agents={agents} className="w-full h-full" />
+            </div>
+            <div className={activeRoom === "boss" ? "w-full h-full" : "hidden"}>
+              <BossOffice className="w-full h-full" />
+            </div>
           </div>
           {crtEnabled && <div className="crt-overlay" />}
 

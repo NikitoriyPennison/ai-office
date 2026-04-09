@@ -384,6 +384,7 @@ export const PixelOffice = forwardRef<PixelOfficeHandle, PixelOfficeProps>(
         ) as Container | undefined;
         if (!agentsLayer) return;
 
+        setAgentNames(agentList);
         const validIds = new Set(agentList.map((a) => a.id));
 
         // Remove agents no longer present (keep NPC lenochka)
@@ -395,7 +396,10 @@ export const PixelOffice = forwardRef<PixelOfficeHandle, PixelOfficeProps>(
         }
 
         // Create or update agents
+        // Agents assigned to other rooms (boss office)
+        const BOSS_OFFICE_AGENTS = new Set(["vanya", "stoyanov"]);
         for (const agent of agentList) {
+          if (BOSS_OFFICE_AGENTS.has(agent.id)) continue;
           const pos = DESK_POSITIONS[agent.id];
           if (!pos) continue;
 
@@ -1208,14 +1212,11 @@ function animateAgent(node: AgentNode, dt: number) {
   // Desk animations (original behavior) — only when SITTING
   switch (node.apiStatus) {
     case "idle":
-      // Subtle breathing: slight Y oscillation
       node.sprite.y = -10 + Math.sin(t * 1.5) * 0.8;
       break;
 
     case "working":
-      // Faster breathing + hand typing motion
       node.sprite.y = -10 + Math.sin(t * 3) * 0.5;
-      // Sparkle particles
       node.particleTimer += dt;
       if (node.particleTimer > 0.3) {
         node.particleTimer = 0;
@@ -1224,13 +1225,11 @@ function animateAgent(node: AgentNode, dt: number) {
       break;
 
     case "thinking":
-      // Thought bubble dots cycling
       node.sprite.y = -10 + Math.sin(t * 1.2) * 1;
       animateThoughtDots(node, t);
       break;
 
     case "busy":
-      // Intense work — faster movement, red particles
       node.sprite.y = -10 + Math.sin(t * 4) * 0.6;
       node.particleTimer += dt;
       if (node.particleTimer > 0.2) {
@@ -1240,7 +1239,6 @@ function animateAgent(node: AgentNode, dt: number) {
       break;
 
     case "offline":
-      // Slumped forward, zzZ animation
       node.sprite.y = -8;
       node.sprite.rotation = 0.05;
       animateZzz(node, t);

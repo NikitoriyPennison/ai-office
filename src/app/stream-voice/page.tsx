@@ -9,7 +9,7 @@ const AGENT_VOICES: Record<string, string> = {
   "Тёма": "echo",
   "Пушкин": "fable",
   "Володя": "onyx",
-  "Гарик": "mikhail",
+  "Стик": "mikhail",
   "Стоянов": "alan",
   "Дед": "roma",
   "Леночка": "nova",
@@ -21,7 +21,7 @@ const AGENT_NAMES: Record<string, string> = {
   vanya: "Ванечка", designer: "Тёма", tema: "Тёма",
   copywriter: "Пушкин", pushkin: "Пушкин",
   tech: "Володя", volodya: "Володя",
-  garik: "Гарик", stoyanov: "Стоянов",
+  garik: "Стик", stoyanov: "Стоянов",
   ded: "Дед", lenochka: "Леночка",
   proshka: "Прошка", gary: "Гари",
 };
@@ -50,7 +50,7 @@ function getAgentName(item: FeedItem): string {
 function getAgentKey(agentName: string): string {
   const map: Record<string, string> = {
     "Ванечка": "vanya", "Тёма": "tema", "Пушкин": "pushkin",
-    "Володя": "volodya", "Гарик": "garik", "Стоянов": "stoyanov",
+    "Володя": "volodya", "Стик": "garik", "Стоянов": "stoyanov",
     "Дед": "ded", "Леночка": "lenochka", "Прошка": "proshka", "Гари": "gary",
   };
   return map[agentName] || "vanya";
@@ -226,7 +226,7 @@ export default function StreamVoicePage() {
 
   // Test
   const testVoice = useCallback(() => {
-    const agents = ["Ванечка", "Пушкин", "Володя", "Тёма", "Дед", "Леночка", "Гарик", "Гари"];
+    const agents = ["Ванечка", "Пушкин", "Володя", "Тёма", "Дед", "Леночка", "Стик", "Гари"];
     const agent = agents[Math.floor(Math.random() * agents.length)];
     const agentKey = getAgentKey(agent);
     
