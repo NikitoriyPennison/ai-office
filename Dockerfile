@@ -13,9 +13,9 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/reports ./reports
+RUN npm install --omit=dev node-cron better-sqlite3 bcryptjs
 EXPOSE 3100
 ENV PORT=3100
 CMD ["sh", "-c", "node scripts/init-db.js && node scripts/scheduler.js & sleep 2 && node server.js"]
