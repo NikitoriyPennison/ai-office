@@ -12,13 +12,12 @@
 const path = require("path");
 const fs = require("fs");
 const { randomUUID } = require("crypto");
-const http = require("http");
 const { execSync, spawn } = require("child_process");
 const Database = require("better-sqlite3");
 
 const DB_PATH = path.join(__dirname, "../data/database.sqlite");
 const AGENT_ID = "stoyanov";
-const OLLAMA_URL = "http://localhost:11434";
+const { generate } = require("./lib/llm");
 const NODE = "C:\\Program Files\\nodejs\\node.exe";
 
 // Загрузить .env
@@ -41,42 +40,6 @@ function setStatus(status, statusText) {
     db.close();
   } catch {}
   console.log(`[${new Date().toLocaleTimeString()}] ${status}: ${statusText}`);
-}
-
-function ollamaGenerate(prompt, model = "llama3.2:3b") {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ model, prompt, stream: false });
-    const req = http.request(
-      `${OLLAMA_URL}/api/generate`,
-      { method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } },
-      (res) => {
-        let data = "";
-        res.on("data", (chunk) => (data += chunk));
-        res.on("end", () => {
-          try { resolve(JSON.parse(data).response || ""); }
-          catch { reject(new Error("Ошибка Ollama")); }
-        });
-      }
-    );
-    req.on("error", reject);
-    req.setTimeout(120000, () => { req.destroy(); reject(new Error("Timeout")); });
-    req.write(body);
-    req.end();
-  });
-}
-
-function getModels() {
-  return new Promise((resolve) => {
-    const req = http.get(`${OLLAMA_URL}/api/tags`, (res) => {
-      let data = "";
-      res.on("data", (c) => (data += c));
-      res.on("end", () => {
-        try { resolve(JSON.parse(data).models?.map((m) => m.name) || []); }
-        catch { resolve([]); }
-      });
-    });
-    req.on("error", () => resolve([]));
-  });
 }
 
 // Доступные боты и их скрипты
@@ -150,13 +113,6 @@ function showStatus() {
 async function processOrder(order) {
   setStatus("working", "Анализирую указание...");
 
-  const models = await getModels();
-  const model = models.find(m => m.includes("llama3")) || models[0];
-  if (!model) {
-    setStatus("offline", "Нет моделей Ollama");
-    return;
-  }
-
   // Спросить LLM какому боту отдать задание
   const botsDesc = Object.entries(BOTS)
     .map(([key, b]) => `- ${key}: ${b.name} — ${b.role}`)
@@ -180,7 +136,7 @@ ${botsDesc}
 Только JSON, без пояснений.`;
 
   setStatus("thinking", "Думаю кому поручить...");
-  const raw = await ollamaGenerate(prompt, model);
+  const raw = (await generate(prompt)).text;
 
   let plan;
   try {

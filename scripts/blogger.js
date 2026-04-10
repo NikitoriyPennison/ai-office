@@ -14,15 +14,14 @@
 const path = require("path");
 const fs = require("fs");
 const { randomUUID } = require("crypto");
-const http = require("http");
 const { execSync, exec } = require("child_process");
 const Database = require("better-sqlite3");
 
 const DB_PATH = path.join(__dirname, "../data/database.sqlite");
 const CONTENT_DIR = path.join(__dirname, "../content");
 const AGENT_ID = "tema"; // используем tema — дизайнер/блогер
+const { generate } = require("./lib/llm");
 
-const OLLAMA_URL = "http://localhost:11434";
 const EDGE_TTS = path.join(process.env.LOCALAPPDATA || "", "Programs/Python/Python312/Scripts/edge-tts.exe");
 const PYTHON = "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe";
 
@@ -42,44 +41,8 @@ function setStatus(status, statusText) {
   console.log(`[${new Date().toLocaleTimeString()}] ${status}: ${statusText}`);
 }
 
-function ollamaGenerate(prompt, model = "llama3.2:3b") {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ model, prompt, stream: false });
-    const req = http.request(
-      `${OLLAMA_URL}/api/generate`,
-      { method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } },
-      (res) => {
-        let data = "";
-        res.on("data", (chunk) => (data += chunk));
-        res.on("end", () => {
-          try { resolve(JSON.parse(data).response || ""); }
-          catch { reject(new Error("Ошибка Ollama")); }
-        });
-      }
-    );
-    req.on("error", reject);
-    req.setTimeout(120000, () => { req.destroy(); reject(new Error("Timeout")); });
-    req.write(body);
-    req.end();
-  });
-}
-
-function getModels() {
-  return new Promise((resolve) => {
-    const req = http.get(`${OLLAMA_URL}/api/tags`, (res) => {
-      let data = "";
-      res.on("data", (c) => (data += c));
-      res.on("end", () => {
-        try { resolve(JSON.parse(data).models?.map((m) => m.name) || []); }
-        catch { resolve([]); }
-      });
-    });
-    req.on("error", () => resolve([]));
-  });
-}
-
 // Генерация сценария
-async function generateScript(topic, model) {
+async function generateScript(topic) {
   const prompt = `Ты — популярный TikTok блогер про 3D-печать. Напиши короткий сценарий для вертикального видео (30-60 секунд).
 
 ${topic ? `Тема: ${topic}` : "Выбери актуальную тему про 3D-печать"}
@@ -99,7 +62,7 @@ ${topic ? `Тема: ${topic}` : "Выбери актуальную тему п�
 4-6 слайдов. Текст на экране — крупный и короткий. Озвучка — разговорная, энергичная.
 Отвечай ТОЛЬКО JSON, без пояснений.`;
 
-  const raw = await ollamaGenerate(prompt, model);
+  const raw = (await generate(prompt)).text;
 
   // Извлечь JSON из ответа
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -253,14 +216,8 @@ async function run(topic) {
   try {
     setStatus("working", "Придумываю сценарий...");
 
-    const models = await getModels();
-    const model = models.find(m => m.includes("llama3")) || models[0];
-    if (!model) { setStatus("offline", "Нет моделей Ollama"); return; }
-
-    console.log(`✅ Модель: ${model}`);
-
     // 1. Сценарий
-    const script = await generateScript(topic, model);
+    const script = await generateScript(topic);
     console.log(`\n📝 Сценарий: "${script.title}"`);
     console.log(`   Слайдов: ${script.slides.length}`);
     console.log(`   Хэштеги: ${script.hashtags?.join(" ") || ""}\n`);

@@ -9,12 +9,11 @@ const Database = require("better-sqlite3");
 const path = require("path");
 const fs = require("fs");
 const { randomUUID } = require("crypto");
-const http = require("http");
+const { generate } = require("./lib/llm");
 
 const DB_PATH = path.join(__dirname, "../data/database.sqlite");
 const REPORTS_DIR = path.join(__dirname, "../reports");
 const WHITELIST_DIR = path.join(__dirname, "../reports/whitelist");
-const OLLAMA_URL = "http://localhost:11434";
 const AGENT_ID = "vanya";
 
 function setStatus(db, status, statusText) {
@@ -28,50 +27,6 @@ function setStatus(db, status, statusText) {
     VALUES (?, 'agent', ?, ?, ?, datetime('now'))
   `).run(randomUUID(), AGENT_ID, "status_change", JSON.stringify({ status, statusText }));
   console.log(`[${new Date().toISOString()}] ${status}: ${statusText}`);
-}
-
-function ollamaGenerate(prompt, model = "llama3.2:3b") {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ model, prompt, stream: false });
-    const req = http.request(
-      `${OLLAMA_URL}/api/generate`,
-      { method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } },
-      (res) => {
-        let data = "";
-        res.on("data", (chunk) => (data += chunk));
-        res.on("end", () => {
-          try { resolve(JSON.parse(data).response || ""); }
-          catch { reject(new Error("Ошибка разбора ответа Ollama")); }
-        });
-      }
-    );
-    req.on("error", reject);
-    req.setTimeout(180000, () => { req.destroy(); reject(new Error("Timeout Ollama")); });
-    req.write(body);
-    req.end();
-  });
-}
-
-function getModels() {
-  return new Promise((resolve) => {
-    const req = http.get(`${OLLAMA_URL}/api/tags`, (res) => {
-      let data = "";
-      res.on("data", (c) => (data += c));
-      res.on("end", () => {
-        try { resolve(JSON.parse(data).models?.map((m) => m.name) || []); }
-        catch { resolve([]); }
-      });
-    });
-    req.on("error", () => resolve([]));
-  });
-}
-
-function checkOllama() {
-  return new Promise((resolve) => {
-    const req = http.get(`${OLLAMA_URL}/api/tags`, (res) => resolve(res.statusCode === 200));
-    req.on("error", () => resolve(false));
-    req.setTimeout(5000, () => { req.destroy(); resolve(false); });
-  });
 }
 
 // Найти последний отчёт Стика
@@ -106,25 +61,6 @@ async function runAdvisor() {
 
   try {
     setStatus(db, "working", "Запускаюсь...");
-
-    const ollamaOk = await checkOllama();
-    if (!ollamaOk) {
-      setStatus(db, "offline", "Ollama недоступна");
-      console.error("❌ Ollama не запущена");
-      process.exit(1);
-    }
-
-    const models = await getModels();
-    const model = models.find((m) => m.includes("llama3")) ||
-                  models.find((m) => m.includes("qwen")) ||
-                  models[0];
-
-    if (!model) {
-      setStatus(db, "offline", "Нет моделей в Ollama");
-      process.exit(1);
-    }
-
-    console.log(`✅ Модель: ${model}`);
 
     // Читаем отчёт Стика
     const report = getLatestReport();
@@ -165,7 +101,8 @@ ${prevWhitelist ? `\nПредыдущий белый список идей:\n---
 
 Отвечай на русском. Будь конкретным, без воды. Формат — markdown.`;
 
-    const analysis = await ollamaGenerate(analysisPrompt, model);
+    const analysisResult = await generate(analysisPrompt);
+    const analysis = analysisResult.text;
 
     // ── Шаг 2: Бизнес-идеи ──
     setStatus(db, "working", "Генерирую бизнес-идеи...");
@@ -184,7 +121,7 @@ ${prevWhitelist ? `\nПредыдущий белый список идей:\n---
 
 Отвечай на русском. Формат — markdown.`;
 
-    const ideas = await ollamaGenerate(ideasPrompt, model);
+    const ideas = (await generate(ideasPrompt)).text;
 
     // ── Шаг 3: Рекомендация новых ботов ──
     setStatus(db, "working", "Думаю каких ботов нанять...");
@@ -211,7 +148,7 @@ ${agentsList}
 
 Отвечай на русском. Формат — markdown.`;
 
-    const hiring = await ollamaGenerate(hiringPrompt, model);
+    const hiring = (await generate(hiringPrompt)).text;
 
     // Сохраняем белый список
     const dateStr = new Date().toISOString().split("T")[0];
@@ -220,7 +157,7 @@ ${agentsList}
 
     const content = `# Белый список — Советник 🧠
 **Дата:** ${today}
-**Модель:** ${model}
+**Провайдер:** ${analysisResult.provider}
 **Источник:** отчёт Стика от ${dateStr}
 
 ---
@@ -255,7 +192,7 @@ ${hiring}
     db.prepare(`
       INSERT INTO activity_logs (id, entity_type, entity_id, action, details, created_at)
       VALUES (?, 'agent', ?, 'whitelist_generated', ?, datetime('now'))
-    `).run(randomUUID(), AGENT_ID, JSON.stringify({ file: whitelistFile, model, source: `report-${dateStr}.md` }));
+    `).run(randomUUID(), AGENT_ID, JSON.stringify({ file: whitelistFile, provider: analysisResult.provider, source: `report-${dateStr}.md` }));
 
   } catch (err) {
     console.error("❌ Ошибка:", err.message);

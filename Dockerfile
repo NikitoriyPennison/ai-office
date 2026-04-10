@@ -17,7 +17,7 @@ COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 COPY --from=builder /app/node_modules/bindings ./node_modules/bindings
 COPY --from=builder /app/node_modules/prebuild-install ./node_modules/prebuild-install
 COPY --from=builder /app/node_modules/file-uri-to-path ./node_modules/file-uri-to-path
-COPY --from=builder /app/scripts/init-db.js ./scripts/init-db.js
+COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/reports ./reports
 EXPOSE 3100
 ENV PORT=3100
