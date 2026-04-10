@@ -1,11 +1,12 @@
-FROM node:22-alpine AS builder
+FROM node:22-slim AS builder
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npx next build
 
-FROM node:22-alpine AS runner
+FROM node:22-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/.next/standalone ./
@@ -17,4 +18,4 @@ COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/reports ./reports
 EXPOSE 3100
 ENV PORT=3100
-CMD ["sh", "-c", "node scripts/init-db.js && node scripts/scheduler.js & node server.js"]
+CMD ["sh", "-c", "node scripts/init-db.js && node scripts/scheduler.js & sleep 2 && node server.js"]
