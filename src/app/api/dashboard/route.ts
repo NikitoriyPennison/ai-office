@@ -5,7 +5,7 @@ import path from "path";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const base = path.resolve("C:/Users/user/alex11");
+  const base = process.env.PROJECT_DIR || process.cwd();
   const reportsDir = path.join(base, "reports");
   const whitelistDir = path.join(base, "reports", "whitelist");
   const videosDir = path.join(base, "content", "videos");
