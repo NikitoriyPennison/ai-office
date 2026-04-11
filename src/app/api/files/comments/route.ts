@@ -10,6 +10,8 @@ function getDb() {
 }
 
 // GET: list comments for a file
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   const base = request.nextUrl.searchParams.get("base");
   const filePath = request.nextUrl.searchParams.get("path");

@@ -5,6 +5,8 @@ import crypto from "crypto";
 const DB_PATH = process.cwd() + "/data/database.sqlite";
 
 // GET — list all chains
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const db = new Database(DB_PATH, { readonly: true });

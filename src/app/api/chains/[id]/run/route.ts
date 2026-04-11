@@ -5,6 +5,8 @@ import crypto from "crypto";
 const DB_PATH = process.cwd() + "/data/database.sqlite";
 
 // POST — run a chain (creates linked tasks)
+export const dynamic = "force-dynamic";
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

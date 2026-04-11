@@ -4,6 +4,8 @@ import { agents } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth/middleware";
 
+export const dynamic = "force-dynamic";
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

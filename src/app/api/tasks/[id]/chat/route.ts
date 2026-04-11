@@ -17,6 +17,8 @@ const AGENT_SESSIONS: Record<string, string> = {
   gary: "agent:gary",
 };
 
+export const dynamic = "force-dynamic";
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

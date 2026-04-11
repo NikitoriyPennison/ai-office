@@ -5,6 +5,8 @@ import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { signToken } from "@/lib/auth/jwt";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   try {
     const { username, password } = await request.json();

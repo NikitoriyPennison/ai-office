@@ -4,6 +4,8 @@ import crypto from "crypto";
 
 const DB_PATH = process.cwd() + "/data/database.sqlite";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   // Require auth token for registration
   const token = request.headers.get("authorization")?.replace("Bearer ", "") ||

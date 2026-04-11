@@ -47,6 +47,8 @@ function scanAgent(agentKey: string) {
   return { totalSize, fileCount, newestMs, estimatedTokens, inputTokens, outputTokens };
 }
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   let totalTokens = 0;
   let totalInput = 0;

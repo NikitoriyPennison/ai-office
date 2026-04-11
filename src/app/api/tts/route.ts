@@ -71,6 +71,8 @@ async function pollTask(taskId: string, maxWait = 30000): Promise<string> {
   throw new Error("TTS timeout");
 }
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   try {
     const { text, voice } = await req.json();

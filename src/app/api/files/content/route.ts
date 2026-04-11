@@ -14,6 +14,8 @@ function getAllowedPaths(): string[] {
   return [join(home, ".openclaw")];
 }
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const filePath = url.searchParams.get("path");

@@ -31,6 +31,8 @@ function searchFiles(dir: string, query: string, results: Array<{path: string; m
   } catch (err) { console.error(err); }
 }
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const query = url.searchParams.get("q") || "";

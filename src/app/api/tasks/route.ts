@@ -5,6 +5,8 @@ import { eq, and, desc } from "drizzle-orm";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth/middleware";
 import { v4 as uuidv4 } from "uuid";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);

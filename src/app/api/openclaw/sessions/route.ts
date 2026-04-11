@@ -32,6 +32,8 @@ function getAgentMapping(): AgentMapping {
   return {};
 }
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const mapping = getAgentMapping();
   const home = process.env.HOME || "/root";

@@ -58,6 +58,8 @@ function buildTree(dirPath: string, depth = 0, maxDepth = 3): TreeNode | null {
   return { name, path: dirPath, type: "directory", children };
 }
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const roots = getFileRoots();
   const trees = roots.map(r => ({

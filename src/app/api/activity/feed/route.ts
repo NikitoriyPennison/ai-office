@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { activityLogs } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const feed = await db
