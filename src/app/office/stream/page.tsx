@@ -64,8 +64,8 @@ export default function StreamPage() {
     fetchAgents().then(() => { fetchLiveStatus(); fetchCosts(); });
     fetchFeed();
 
-    const agentInterval = setInterval(fetchLiveStatus, 10000);
-    const feedInterval = setInterval(fetchFeed, 10000);
+    const agentInterval = setInterval(fetchLiveStatus, 3000);
+    const feedInterval = setInterval(fetchFeed, 5000);
     const costInterval = setInterval(fetchCosts, 30000);
     return () => {
       clearInterval(agentInterval);

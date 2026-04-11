@@ -533,7 +533,7 @@ export function BossOffice({ className }: BossOfficeProps) {
         } catch {}
       }
       pollStatus();
-      const statusInterval = setInterval(pollStatus, 5000);
+      const statusInterval = setInterval(pollStatus, 3000);
 
       // Status indicator dot
       const statusDot = new Graphics();
