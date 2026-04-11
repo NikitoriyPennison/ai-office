@@ -12,7 +12,7 @@
  * Также можно просто написать сообщение — бот ответит через LLM от лица агента.
  */
 
-const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
+const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require("discord.js");
 const path = require("path");
 const fs = require("fs");
 const { spawn } = require("child_process");
@@ -138,23 +138,33 @@ client.on("messageCreate", async (message) => {
 
   // ── !стик ──
   if (content === "!стик" || content === "!stik") {
-    const report = readFile(path.join(REPORTS_DIR, "latest.md"));
+    const reportPath = path.join(REPORTS_DIR, "latest.md");
+    const report = readFile(reportPath);
     const embed = new EmbedBuilder()
       .setColor(0xecb00a)
       .setTitle("📊 Отчёт Стика")
       .setDescription(truncate(report));
-    message.reply({ embeds: [embed] });
+    const files = [];
+    if (report && fs.existsSync(reportPath)) {
+      files.push(new AttachmentBuilder(reportPath).setName("отчёт-стика.md"));
+    }
+    message.reply({ embeds: [embed], files });
     return;
   }
 
   // ── !советник ──
   if (content === "!советник" || content === "!advisor") {
-    const report = readFile(path.join(WHITELIST_DIR, "latest.md"));
+    const reportPath = path.join(WHITELIST_DIR, "latest.md");
+    const report = readFile(reportPath);
     const embed = new EmbedBuilder()
       .setColor(0x6c5ce7)
       .setTitle("🧠 Белый список Советника")
       .setDescription(truncate(report));
-    message.reply({ embeds: [embed] });
+    const files = [];
+    if (report && fs.existsSync(reportPath)) {
+      files.push(new AttachmentBuilder(reportPath).setName("белый-список.md"));
+    }
+    message.reply({ embeds: [embed], files });
     return;
   }
 
@@ -162,12 +172,17 @@ client.on("messageCreate", async (message) => {
   if (content === "!отчёт" || content === "!report") {
     await message.reply("📊 Стик начинает анализ рынка...");
     const result = await runScript("market-analyst.js");
-    const report = readFile(path.join(REPORTS_DIR, "latest.md"));
+    const reportPath = path.join(REPORTS_DIR, "latest.md");
+    const report = readFile(reportPath);
     const embed = new EmbedBuilder()
       .setColor(result.code === 0 ? 0x00b894 : 0xe17055)
       .setTitle(result.code === 0 ? "📊 Отчёт готов!" : "❌ Ошибка")
       .setDescription(truncate(report || result.output));
-    message.reply({ embeds: [embed] });
+    const files = [];
+    if (result.code === 0 && fs.existsSync(reportPath)) {
+      files.push(new AttachmentBuilder(reportPath).setName("отчёт-стика.md"));
+    }
+    message.reply({ embeds: [embed], files });
     return;
   }
 
@@ -181,7 +196,31 @@ client.on("messageCreate", async (message) => {
       .setColor(result.code === 0 ? 0x00b894 : 0xe17055)
       .setTitle(result.code === 0 ? "🎬 Видео готово!" : "❌ Ошибка")
       .setDescription(truncate(result.output, 1500));
-    message.reply({ embeds: [embed] });
+    // Найти и отправить видео + сценарий
+    const files = [];
+    const videosDir = path.join(__dirname, "../content/videos");
+    const scriptsDir = path.join(__dirname, "../content/scripts");
+    try {
+      if (fs.existsSync(videosDir)) {
+        const vids = fs.readdirSync(videosDir).filter(f => f.endsWith(".mp4")).sort().reverse();
+        if (vids[0]) {
+          const vidPath = path.join(videosDir, vids[0]);
+          const stat = fs.statSync(vidPath);
+          if (stat.size < 25 * 1024 * 1024) { // < 25MB
+            files.push(new AttachmentBuilder(vidPath).setName(vids[0]));
+          } else {
+            embed.setFooter({ text: "Видео > 25MB, не влезает в Discord" });
+          }
+        }
+      }
+      if (fs.existsSync(scriptsDir)) {
+        const scripts = fs.readdirSync(scriptsDir).filter(f => f.endsWith(".json")).sort().reverse();
+        if (scripts[0]) {
+          files.push(new AttachmentBuilder(path.join(scriptsDir, scripts[0])).setName("сценарий.json"));
+        }
+      }
+    } catch {}
+    message.reply({ embeds: [embed], files });
     return;
   }
 
