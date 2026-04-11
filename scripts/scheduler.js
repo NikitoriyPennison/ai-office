@@ -44,6 +44,14 @@ cron.schedule("0 10 * * *", () => {
   runScript("advisor.js");
 });
 
+// ── Discord бот ──
+if (process.env.DISCORD_TOKEN_STIK) {
+  runScript("discord-bot.js");
+  console.log("🤖 Discord бот запущен");
+} else {
+  console.log("⚠️ DISCORD_TOKEN_STIK не найден, Discord бот пропущен");
+}
+
 // ── Life-sim (встроенный, лёгкий) ──
 const Database = require("better-sqlite3");
 const { randomUUID } = require("crypto");

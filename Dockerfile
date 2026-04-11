@@ -16,5 +16,5 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/reports ./reports
-RUN npm install --omit=dev node-cron better-sqlite3 bcryptjs
+RUN npm install --omit=dev node-cron better-sqlite3 bcryptjs discord.js
 CMD ["sh", "-c", "node scripts/init-db.js && node scripts/scheduler.js & sleep 2 && node server.js"]
