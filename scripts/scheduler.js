@@ -97,7 +97,7 @@ function initStates() {
     for (const a of agents) {
       agentState[a.id] = {
         status: "idle",
-        nextAction: randomRange(10, 40),
+        nextAction: randomRange(3, 10),
         workLeft: 0,
       };
     }
@@ -114,7 +114,7 @@ function tick() {
       if (state.workLeft <= 0) {
         state.status = "idle";
         db.prepare("UPDATE agents SET current_status = 'idle' WHERE id = ?").run(id);
-        state.nextAction = randomRange(20, 60);
+        state.nextAction = randomRange(5, 15);
       }
       continue;
     }
@@ -123,11 +123,11 @@ function tick() {
     if (state.nextAction <= 0 && ACTIVITIES[id]) {
       const status = randomItem(STATUSES);
       const activity = randomItem(ACTIVITIES[id]);
-      const duration = randomRange(10, 40);
+      const duration = randomRange(8, 25);
 
       state.status = status;
       state.workLeft = duration;
-      state.nextAction = duration + randomRange(20, 60);
+      state.nextAction = duration + randomRange(5, 15);
 
       db.prepare("UPDATE agents SET current_status = ? WHERE id = ?").run(status, id);
       try {
