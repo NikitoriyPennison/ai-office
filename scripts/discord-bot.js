@@ -241,26 +241,22 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
-  // ── Свободный чат через LLM ──
-  if (content.startsWith("!чат") || content.startsWith("!chat") || message.mentions.has(client.user)) {
-    const question = content.replace(/^!(чат|chat)\s*/, "").replace(/<@!?\d+>/g, "").trim();
-    if (!question) {
-      message.reply("Напиши вопрос: `!чат Какие тренды в 3D печати?`");
-      return;
-    }
+  // ── Свободный чат — отвечает на ЛЮБОЕ сообщение ──
+  if (content && !content.startsWith("!")) {
+    const question = content.replace(/<@!?\d+>/g, "").trim();
+    if (!question) return;
 
     await message.channel.sendTyping();
 
-    const prompt = `Ты — AI-ассистент офиса 3D-печати. У тебя команда: Стик (аналитик), Советник (бизнес), Дейви (секретарь), Блогер (TikTok), Надзиратель (менеджер). Отвечай кратко и по делу на русском.\n\nВопрос: ${question}`;
+    const prompt = `Ты — AI-ассистент офиса 3D-печати по имени Офис. У тебя команда: Стик (аналитик рынка), Советник (бизнес-идеи), Дейви (секретарь, звонки), Блогер (TikTok видео), Надзиратель (менеджер задач).
+
+Ты дружелюбный, отвечаешь кратко и по делу на русском. Если тебя спрашивают про команды бота — подскажи (!стик, !советник, !блогер, !надзиратель, !статус, !отчёт).
+
+Сообщение: ${question}`;
 
     try {
       const result = await generate(prompt);
-      const embed = new EmbedBuilder()
-        .setColor(0x74b9ff)
-        .setTitle("💬 AI Office")
-        .setDescription(truncate(result.text, 3900))
-        .setFooter({ text: `via ${result.provider}` });
-      message.reply({ embeds: [embed] });
+      message.reply(truncate(result.text, 1900));
     } catch (err) {
       message.reply(`❌ Ошибка: ${err.message}`);
     }
