@@ -28,7 +28,7 @@ function groqGenerate(prompt) {
       model: GROQ_MODEL,
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
-      max_tokens: 2048,
+      max_tokens: 1024,
     });
     const req = https.request({
       hostname: "api.groq.com",
@@ -83,14 +83,27 @@ function ollamaGenerate(prompt) {
   });
 }
 
-// ── Главная функция — Groq первый, Ollama fallback ──
+// ── Retry with delay ──
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Главная функция — Groq с retry, потом Ollama fallback ──
 async function generate(prompt) {
   if (GROQ_API_KEY) {
-    try {
-      const result = await groqGenerate(prompt);
-      return { text: result, provider: "groq" };
-    } catch (err) {
-      console.log(`⚠️ Groq error: ${err.message}, trying Ollama...`);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const result = await groqGenerate(prompt);
+        return { text: result, provider: "groq" };
+      } catch (err) {
+        if (err.message.includes("Rate limit") && attempt < 2) {
+          const waitMatch = err.message.match(/try again in ([\d.]+)s/);
+          const wait = waitMatch ? parseFloat(waitMatch[1]) * 1000 + 500 : 10000;
+          console.log(`⏳ Rate limit, жду ${(wait/1000).toFixed(1)}с...`);
+          await sleep(wait);
+          continue;
+        }
+        console.log(`⚠️ Groq error: ${err.message}, trying Ollama...`);
+        break;
+      }
     }
   }
 
