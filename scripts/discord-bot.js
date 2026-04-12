@@ -111,9 +111,18 @@ client.on("messageCreate", async (message) => {
         "**!статус** — статус всех агентов",
         "**!стик** — последний отчёт по рынку 3D-печати",
         "**!советник** — белый список идей",
-        "**!блогер** — создать видео для TikTok",
+        "**!блогер** `тема` — создать видео для TikTok",
         "**!надзиратель** `задание` — дать задание команде",
         "**!отчёт** — запустить новый отчёт Стика",
+        "",
+        "💻 **Девелопер:**",
+        "**!файл** `путь` — прочитать файл",
+        "**!файлы** — список файлов проекта",
+        "**!код** `вопрос` — спросить про код",
+        "**!редакт** `путь` `что изменить` — изменить файл через AI",
+        "**!запуск** `команда` — выполнить скрипт",
+        "**!деплой** — коммит + пуш на GitHub",
+        "**!логи** — последние логи Railway",
         "",
         "Или просто напиши сообщение — бот ответит через AI.",
       ].join("\n"));
@@ -238,6 +247,202 @@ client.on("messageCreate", async (message) => {
       .setTitle("👁️ Задание выполнено")
       .setDescription(truncate(result.output, 1500));
     message.reply({ embeds: [embed] });
+    return;
+  }
+
+  // ── 💻 ДЕВЕЛОПЕР: !файл — прочитать файл ──
+  if (content.startsWith("!файл ") || content.startsWith("!file ")) {
+    const filePath = content.replace(/^!(файл|file)\s+/, "").trim();
+    const fullPath = path.join(__dirname, "..", filePath);
+    try {
+      if (!fs.existsSync(fullPath)) {
+        message.reply(`❌ Файл не найден: \`${filePath}\``);
+        return;
+      }
+      const stat = fs.statSync(fullPath);
+      if (stat.size > 50000) {
+        message.reply(`⚠️ Файл слишком большой (${(stat.size/1024).toFixed(1)}KB). Отправляю как вложение.`);
+        message.reply({ files: [new AttachmentBuilder(fullPath).setName(path.basename(fullPath))] });
+        return;
+      }
+      const content_file = fs.readFileSync(fullPath, "utf-8");
+      const ext = path.extname(fullPath).replace(".", "") || "txt";
+      const chunks = content_file.match(/[\s\S]{1,1900}/g) || ["(пустой файл)"];
+      for (const chunk of chunks.slice(0, 3)) {
+        await message.reply("```" + ext + "\n" + chunk + "\n```");
+      }
+      if (chunks.length > 3) message.reply(`*...ещё ${chunks.length - 3} частей*`);
+    } catch (err) {
+      message.reply(`❌ Ошибка: ${err.message}`);
+    }
+    return;
+  }
+
+  // ── 💻 ДЕВЕЛОПЕР: !файлы — список файлов ──
+  if (content === "!файлы" || content === "!files") {
+    const projectDir = path.join(__dirname, "..");
+    function listDir(dir, prefix = "", depth = 0) {
+      if (depth > 2) return [];
+      const lines = [];
+      try {
+        const entries = fs.readdirSync(dir).filter(f => !f.startsWith(".") && f !== "node_modules" && f !== ".next");
+        for (const e of entries.slice(0, 30)) {
+          const full = path.join(dir, e);
+          const stat = fs.statSync(full);
+          if (stat.isDirectory()) {
+            lines.push(prefix + "📁 " + e + "/");
+            lines.push(...listDir(full, prefix + "  ", depth + 1));
+          } else {
+            lines.push(prefix + "📄 " + e);
+          }
+        }
+      } catch {}
+      return lines;
+    }
+    const tree = listDir(projectDir).slice(0, 50);
+    const embed = new EmbedBuilder()
+      .setColor(0x74b9ff)
+      .setTitle("💻 Структура проекта")
+      .setDescription("```\n" + tree.join("\n") + "\n```");
+    message.reply({ embeds: [embed] });
+    return;
+  }
+
+  // ── 💻 ДЕВЕЛОПЕР: !код — вопрос про код ──
+  if (content.startsWith("!код ") || content.startsWith("!code ")) {
+    const question = content.replace(/^!(код|code)\s+/, "").trim();
+    await message.channel.sendTyping();
+
+    // Собрать контекст проекта
+    const packageJson = readFile(path.join(__dirname, "../package.json")) || "";
+    const fileList = fs.readdirSync(path.join(__dirname, "../scripts")).join(", ");
+
+    const prompt = `Ты — разработчик проекта AI Office (Next.js + PixiJS + SQLite).
+
+Структура: Next.js 15 приложение с пиксельным офисом, 6 AI-агентов, Discord бот, Groq LLM.
+Скрипты: ${fileList}
+package.json (частично): ${packageJson.substring(0, 500)}
+
+Вопрос: ${question}
+
+Отвечай конкретно, с примерами кода если нужно. На русском.`;
+
+    try {
+      const result = await generate(prompt);
+      message.reply(truncate(result.text, 1900));
+    } catch (err) {
+      message.reply(`❌ ${err.message}`);
+    }
+    return;
+  }
+
+  // ── 💻 ДЕВЕЛОПЕР: !редакт — изменить файл через AI ──
+  if (content.startsWith("!редакт ") || content.startsWith("!edit ")) {
+    const parts = content.replace(/^!(редакт|edit)\s+/, "").trim();
+    const firstSpace = parts.indexOf(" ");
+    if (firstSpace === -1) {
+      message.reply("💻 Формат: `!редакт путь/к/файлу что изменить`");
+      return;
+    }
+    const filePath = parts.substring(0, firstSpace);
+    const instruction = parts.substring(firstSpace + 1);
+    const fullPath = path.join(__dirname, "..", filePath);
+
+    if (!fs.existsSync(fullPath)) {
+      message.reply(`❌ Файл не найден: \`${filePath}\``);
+      return;
+    }
+
+    await message.channel.sendTyping();
+    const originalContent = fs.readFileSync(fullPath, "utf-8");
+
+    const prompt = `Ты — разработчик. Вот содержимое файла ${filePath}:
+
+\`\`\`
+${originalContent.substring(0, 3000)}
+\`\`\`
+
+Задача: ${instruction}
+
+Верни ПОЛНЫЙ обновлённый файл. Только код, без пояснений. Начни с \`\`\` и закончи \`\`\`.`;
+
+    try {
+      const result = await generate(prompt);
+      const codeMatch = result.text.match(/```[\w]*\n([\s\S]*?)```/);
+      if (codeMatch) {
+        fs.writeFileSync(fullPath, codeMatch[1]);
+        message.reply(`✅ Файл обновлён: \`${filePath}\``);
+      } else {
+        fs.writeFileSync(fullPath, result.text);
+        message.reply(`✅ Файл перезаписан: \`${filePath}\` (AI не обернул в блок кода)`);
+      }
+    } catch (err) {
+      message.reply(`❌ ${err.message}`);
+    }
+    return;
+  }
+
+  // ── 💻 ДЕВЕЛОПЕР: !запуск — выполнить скрипт ──
+  if (content.startsWith("!запуск ") || content.startsWith("!run ")) {
+    const cmd = content.replace(/^!(запуск|run)\s+/, "").trim();
+    // Безопасность: только скрипты из scripts/
+    const allowed = ["market-analyst.js", "advisor.js", "blogger.js", "overseer.js", "life-sim.js", "secretary.js"];
+    const scriptName = cmd.split(" ")[0];
+    if (!allowed.some(a => cmd.includes(a))) {
+      message.reply(`⚠️ Можно запускать только: ${allowed.join(", ")}`);
+      return;
+    }
+    await message.reply(`⚙️ Запускаю: \`${cmd}\``);
+    const args = cmd.split(" ");
+    const result = await runScript(args[0], args.slice(1));
+    const embed = new EmbedBuilder()
+      .setColor(result.code === 0 ? 0x00b894 : 0xe17055)
+      .setTitle(result.code === 0 ? "✅ Готово" : "❌ Ошибка")
+      .setDescription(truncate(result.output, 1500));
+    message.reply({ embeds: [embed] });
+    return;
+  }
+
+  // ── 💻 ДЕВЕЛОПЕР: !деплой — коммит и пуш ──
+  if (content === "!деплой" || content === "!deploy") {
+    await message.reply("🚀 Коммичу и пушу на GitHub...");
+    try {
+      const { execSync } = require("child_process");
+      const opts = { encoding: "utf-8", cwd: path.join(__dirname, ".."), timeout: 30000 };
+      execSync('git add -A', opts);
+      const status = execSync('git status --short', opts).trim();
+      if (!status) {
+        message.reply("📦 Нет изменений для деплоя.");
+        return;
+      }
+      execSync('git commit -m "Deploy from Discord bot"', opts);
+      execSync('git push origin main', opts);
+      message.reply(`✅ Задеплоено! Railway подхватит через 2-3 мин.\n\`\`\`\n${status}\n\`\`\``);
+    } catch (err) {
+      message.reply(`❌ Ошибка деплоя: ${err.message.substring(0, 500)}`);
+    }
+    return;
+  }
+
+  // ── 💻 ДЕВЕЛОПЕР: !логи — последние activity logs ──
+  if (content === "!логи" || content === "!logs") {
+    try {
+      const db = new Database(DB_PATH);
+      const logs = db.prepare("SELECT entity_id, action, details, created_at FROM activity_logs ORDER BY created_at DESC LIMIT 15").all();
+      db.close();
+      const lines = logs.map(l => {
+        const d = l.details ? JSON.parse(l.details) : {};
+        const msg = d.statusText || d.message || d.summary || l.action;
+        return `\`${l.created_at?.substring(11, 19) || ""}\` **${l.entity_id}** ${msg}`;
+      });
+      const embed = new EmbedBuilder()
+        .setColor(0x636e72)
+        .setTitle("📋 Последние логи")
+        .setDescription(lines.join("\n") || "Пусто");
+      message.reply({ embeds: [embed] });
+    } catch (err) {
+      message.reply(`❌ ${err.message}`);
+    }
     return;
   }
 
