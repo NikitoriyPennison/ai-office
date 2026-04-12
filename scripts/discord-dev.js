@@ -74,6 +74,9 @@ client.on("messageCreate", async (message) => {
   const content = message.content.trim();
   if (!content) return;
 
+  // Девелопер отвечает только когда @упомянут
+  if (!message.mentions.has(client.user)) return;
+
   await message.channel.sendTyping();
   addH(message.channel.id, "user", content);
 

@@ -102,8 +102,8 @@ client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   const content = message.content.trim();
 
-  // Офис бот отвечает ТОЛЬКО на ! команды
-  if (!content.startsWith("!")) return;
+  // Офис отвечает только на ! команды или когда @упомянут
+  if (!content.startsWith("!") && !message.mentions.has(client.user)) return;
 
   // ── !помощь ──
   if (content === "!помощь" || content === "!help") {
