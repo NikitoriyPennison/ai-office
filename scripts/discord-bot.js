@@ -446,24 +446,182 @@ ${originalContent.substring(0, 3000)}
     return;
   }
 
-  // ── Свободный чат — отвечает на ЛЮБОЕ сообщение ──
+  // ── Умный чат — понимает намерение без команд ──
   if (content && !content.startsWith("!")) {
     const question = content.replace(/<@!?\d+>/g, "").trim();
     if (!question) return;
 
     await message.channel.sendTyping();
 
-    const prompt = `Ты — AI-ассистент офиса 3D-печати по имени Офис. У тебя команда: Стик (аналитик рынка), Советник (бизнес-идеи), Дейви (секретарь, звонки), Блогер (TikTok видео), Надзиратель (менеджер задач).
+    // Собираем контекст
+    const projectDir = path.join(__dirname, "..");
+    const scriptsList = fs.readdirSync(path.join(__dirname)).filter(f => f.endsWith(".js")).join(", ");
 
-Ты дружелюбный, отвечаешь кратко и по делу на русском. Если тебя спрашивают про команды бота — подскажи (!стик, !советник, !блогер, !надзиратель, !статус, !отчёт).
+    const intentPrompt = `Ты — AI-разработчик и ассистент. Определи что хочет пользователь и ответь JSON:
+{
+  "intent": "одно из: chat/read_file/edit_file/list_files/run_script/deploy/logs/status/report/advisor/blogger",
+  "file": "путь к файлу если нужен",
+  "edit_instruction": "что изменить если intent=edit_file",
+  "script": "имя скрипта если intent=run_script",
+  "topic": "тема если intent=blogger",
+  "answer": "ответ пользователю если intent=chat"
+}
 
-Сообщение: ${question}`;
+Доступные скрипты: ${scriptsList}
+Проект: Next.js AI Office с 6 агентами (Стик, Советник, Дейви, Блогер, Надзиратель, Девелопер).
+
+Сообщение: "${question}"
+
+Только JSON.`;
 
     try {
-      const result = await generate(prompt);
-      message.reply(truncate(result.text, 1900));
+      const intentResult = await generate(intentPrompt);
+      let intent;
+      try {
+        const jsonMatch = intentResult.text.match(/\{[\s\S]*\}/);
+        intent = JSON.parse(jsonMatch[0]);
+      } catch {
+        // Не смог разобрать — просто отвечаем как чат
+        const chatResult = await generate(`Ты — AI-разработчик офиса 3D-печати по имени Девелопер. Отвечай кратко на русском.\n\nСообщение: ${question}`);
+        message.reply(truncate(chatResult.text, 1900));
+        return;
+      }
+
+      // Выполняем намерение
+      switch (intent.intent) {
+        case "read_file": {
+          const fp = path.join(projectDir, intent.file || "");
+          if (!intent.file || !fs.existsSync(fp)) {
+            message.reply(`Файл не найден: \`${intent.file}\`. Скажи какой файл показать.`);
+          } else {
+            const fc = fs.readFileSync(fp, "utf-8");
+            const ext = path.extname(fp).replace(".", "") || "txt";
+            const chunks = fc.match(/[\s\S]{1,1900}/g) || ["(пусто)"];
+            for (const chunk of chunks.slice(0, 3)) {
+              await message.reply("```" + ext + "\n" + chunk + "\n```");
+            }
+          }
+          break;
+        }
+
+        case "edit_file": {
+          const fp = path.join(projectDir, intent.file || "");
+          if (!intent.file || !fs.existsSync(fp)) {
+            message.reply(`Не могу найти файл: \`${intent.file}\``);
+            break;
+          }
+          await message.reply(`✏️ Редактирую \`${intent.file}\`...`);
+          const original = fs.readFileSync(fp, "utf-8");
+          const editPrompt = `Вот файл ${intent.file}:\n\`\`\`\n${original.substring(0, 3000)}\n\`\`\`\n\nЗадача: ${intent.edit_instruction}\n\nВерни ПОЛНЫЙ обновлённый файл в блоке \`\`\`.`;
+          const editResult = await generate(editPrompt);
+          const codeMatch = editResult.text.match(/```[\w]*\n([\s\S]*?)```/);
+          if (codeMatch) {
+            fs.writeFileSync(fp, codeMatch[1]);
+            message.reply(`✅ Готово! Файл \`${intent.file}\` обновлён.`);
+          } else {
+            message.reply(`⚠️ Не смог сгенерировать код. Попробуй уточнить.`);
+          }
+          break;
+        }
+
+        case "list_files": {
+          function listDir(dir, prefix = "", depth = 0) {
+            if (depth > 2) return [];
+            const lines = [];
+            try {
+              const entries = fs.readdirSync(dir).filter(f => !f.startsWith(".") && f !== "node_modules" && f !== ".next");
+              for (const e of entries.slice(0, 25)) {
+                const full = path.join(dir, e);
+                const stat = fs.statSync(full);
+                lines.push(prefix + (stat.isDirectory() ? "📁 " : "📄 ") + e + (stat.isDirectory() ? "/" : ""));
+                if (stat.isDirectory()) lines.push(...listDir(full, prefix + "  ", depth + 1));
+              }
+            } catch {}
+            return lines;
+          }
+          const tree = listDir(projectDir).slice(0, 40);
+          message.reply("```\n" + tree.join("\n") + "\n```");
+          break;
+        }
+
+        case "run_script": {
+          const allowed = ["market-analyst.js", "advisor.js", "blogger.js", "overseer.js", "secretary.js"];
+          const script = intent.script || "";
+          if (!allowed.some(a => script.includes(a))) {
+            message.reply(`Могу запустить: ${allowed.join(", ")}`);
+            break;
+          }
+          await message.reply(`⚙️ Запускаю ${script}...`);
+          const r = await runScript(script, intent.topic ? ["video", intent.topic] : []);
+          message.reply(truncate(r.output, 1500));
+          break;
+        }
+
+        case "deploy": {
+          await message.reply("🚀 Деплою...");
+          try {
+            const { execSync } = require("child_process");
+            const opts = { encoding: "utf-8", cwd: projectDir, timeout: 30000 };
+            execSync('git add -A', opts);
+            const status = execSync('git status --short', opts).trim();
+            if (!status) { message.reply("📦 Нет изменений."); break; }
+            execSync('git commit -m "Deploy from Discord"', opts);
+            execSync('git push origin main', opts);
+            message.reply(`✅ Задеплоено!\n\`\`\`\n${status}\n\`\`\``);
+          } catch (err) { message.reply(`❌ ${err.message.substring(0, 500)}`); }
+          break;
+        }
+
+        case "logs": {
+          const db = new Database(DB_PATH);
+          const logs = db.prepare("SELECT entity_id, action, details, created_at FROM activity_logs ORDER BY created_at DESC LIMIT 10").all();
+          db.close();
+          const lines = logs.map(l => {
+            const d = l.details ? JSON.parse(l.details) : {};
+            return `\`${l.created_at?.substring(11, 19) || ""}\` **${l.entity_id}** ${d.statusText || d.message || l.action}`;
+          });
+          message.reply(lines.join("\n") || "Логов нет");
+          break;
+        }
+
+        case "status": {
+          const agents = getStatuses();
+          const icons = { working: "🟢", thinking: "🟡", busy: "🟠", idle: "⚪", offline: "🔴" };
+          const lines = agents.map(a => `${a.emoji} **${a.name}** ${icons[a.current_status] || "⚪"} ${a.current_status}`);
+          message.reply(lines.join("\n"));
+          break;
+        }
+
+        case "report": {
+          await message.reply("📊 Стик начинает анализ...");
+          const r = await runScript("market-analyst.js");
+          const report = readFile(path.join(REPORTS_DIR, "latest.md"));
+          message.reply(truncate(report || r.output, 1900));
+          break;
+        }
+
+        case "advisor": {
+          const report = readFile(path.join(WHITELIST_DIR, "latest.md"));
+          message.reply(truncate(report || "Нет отчёта. Скажи 'запусти советника'.", 1900));
+          break;
+        }
+
+        case "blogger": {
+          await message.reply(`🎬 Блогер создаёт видео${intent.topic ? ": " + intent.topic : ""}...`);
+          const r = await runScript("blogger.js", intent.topic ? ["video", intent.topic] : []);
+          message.reply(truncate(r.output, 1500));
+          break;
+        }
+
+        default: {
+          // Просто чат
+          const chatPrompt = `Ты — AI-разработчик офиса 3D-печати по имени Девелопер. У тебя команда из 6 агентов. Ты можешь читать/редактировать код, деплоить, запускать скрипты. Отвечай кратко и по делу на русском.\n\n${question}`;
+          const chatResult = await generate(chatPrompt);
+          message.reply(truncate(chatResult.text, 1900));
+        }
+      }
     } catch (err) {
-      message.reply(`❌ Ошибка: ${err.message}`);
+      message.reply(`❌ ${err.message}`);
     }
   }
 });
