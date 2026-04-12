@@ -105,14 +105,35 @@ client.on("messageCreate", async (message) => {
   // Офис отвечает только на ! команды или когда @упомянут
   if (!content.startsWith("!") && !message.mentions.has(client.user)) return;
 
+  // Если @упомянут — преобразуем текст в команду
+  let cmd = content;
+  if (message.mentions.has(client.user) && !content.startsWith("!")) {
+    const text = content.replace(/<@!?\d+>/g, "").trim().toLowerCase();
+    if (text.includes("стик") || text.includes("отчёт") || text.includes("отчет") || text.includes("рынок")) cmd = "!стик";
+    else if (text.includes("советник") || text.includes("идеи") || text.includes("белый список")) cmd = "!советник";
+    else if (text.includes("блогер") || text.includes("видео")) cmd = "!блогер " + text.replace(/блогер|видео/g, "").trim();
+    else if (text.includes("статус")) cmd = "!статус";
+    else if (text.includes("сайт") || text.includes("ссылк")) cmd = "!сайт";
+    else if (text.includes("помощь") || text.includes("команд")) cmd = "!помощь";
+    else if (text.includes("надзиратель")) cmd = "!надзиратель " + text.replace(/надзиратель/g, "").trim();
+    else {
+      // Не распознано — краткий ответ без выдумок
+      const agents = getStatuses();
+      const icons = { working: "🟢", thinking: "🟡", busy: "🟠", idle: "⚪", offline: "🔴" };
+      const statusLine = agents.map(a => `${a.emoji}${a.name} ${icons[a.current_status] || "⚪"}`).join(" | ");
+      message.reply(`🏢 **AI Office**\n${statusLine}\n\nИспользуй \`!помощь\` для списка команд.`);
+      return;
+    }
+  }
+
   // ── !сайт ──
-  if (content === "!сайт" || content === "!site") {
+  if (cmd === "!сайт" || cmd === "!site") {
     message.reply("🏢 **AI Office:** https://ai-office-production-70f8.up.railway.app\nЛогин: `admin` / `admin123`");
     return;
   }
 
   // ── !помощь ──
-  if (content === "!помощь" || content === "!help") {
+  if (cmd === "!помощь" || cmd === "!help") {
     const embed = new EmbedBuilder()
       .setColor(0xecb00a)
       .setTitle("🏢 AI Office — Команды")
@@ -141,7 +162,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ── !статус ──
-  if (content === "!статус" || content === "!status") {
+  if (cmd === "!статус" || cmd === "!status") {
     const agents = getStatuses();
     const statusIcons = { working: "🟢", thinking: "🟡", busy: "🟠", idle: "⚪", offline: "🔴" };
     const lines = agents.map(a =>
@@ -156,7 +177,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ── !стик ──
-  if (content === "!стик" || content === "!stik") {
+  if (cmd === "!стик" || cmd === "!stik") {
     const reportPath = path.join(REPORTS_DIR, "latest.md");
     const report = readFile(reportPath);
     const embed = new EmbedBuilder()
@@ -172,7 +193,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ── !советник ──
-  if (content === "!советник" || content === "!advisor") {
+  if (cmd === "!советник" || cmd === "!advisor") {
     const reportPath = path.join(WHITELIST_DIR, "latest.md");
     const report = readFile(reportPath);
     const embed = new EmbedBuilder()
@@ -188,7 +209,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ── !отчёт — запустить Стика ──
-  if (content === "!отчёт" || content === "!report") {
+  if (cmd === "!отчёт" || cmd === "!report") {
     await message.reply("📊 Стик начинает анализ рынка...");
     const result = await runScript("market-analyst.js");
     const reportPath = path.join(REPORTS_DIR, "latest.md");
@@ -206,7 +227,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ── !блогер ──
-  if (content.startsWith("!блогер") || content.startsWith("!blogger")) {
+  if (cmd.startsWith("!блогер") || cmd.startsWith("!blogger")) {
     const topic = content.replace(/^!(блогер|blogger)\s*/, "").trim();
     await message.reply(`🎬 Блогер создаёт видео${topic ? ": " + topic : ""}...`);
     const args = topic ? ["video", topic] : [];
@@ -244,7 +265,7 @@ client.on("messageCreate", async (message) => {
   }
 
   // ── !надзиратель ──
-  if (content.startsWith("!надзиратель") || content.startsWith("!overseer")) {
+  if (cmd.startsWith("!надзиратель") || cmd.startsWith("!overseer")) {
     const order = content.replace(/^!(надзиратель|overseer)\s*/, "").trim();
     if (!order) {
       message.reply("👁️ Укажи задание: `!надзиратель Сделай отчёт и создай видео`");
