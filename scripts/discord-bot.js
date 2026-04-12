@@ -105,12 +105,19 @@ client.on("messageCreate", async (message) => {
   // Офис отвечает только на ! команды или когда @упомянут
   if (!content.startsWith("!") && !message.mentions.has(client.user)) return;
 
+  // ── !сайт ──
+  if (content === "!сайт" || content === "!site") {
+    message.reply("🏢 **AI Office:** https://ai-office-production-70f8.up.railway.app\nЛогин: `admin` / `admin123`");
+    return;
+  }
+
   // ── !помощь ──
   if (content === "!помощь" || content === "!help") {
     const embed = new EmbedBuilder()
       .setColor(0xecb00a)
       .setTitle("🏢 AI Office — Команды")
       .setDescription([
+        "**!сайт** — ссылка на AI Office",
         "**!статус** — статус всех агентов",
         "**!стик** — последний отчёт по рынку 3D-печати",
         "**!советник** — белый список идей",
