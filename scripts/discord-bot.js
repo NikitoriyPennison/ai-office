@@ -102,6 +102,9 @@ client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   const content = message.content.trim();
 
+  // Офис бот отвечает ТОЛЬКО на ! команды
+  if (!content.startsWith("!")) return;
+
   // ── !помощь ──
   if (content === "!помощь" || content === "!help") {
     const embed = new EmbedBuilder()
