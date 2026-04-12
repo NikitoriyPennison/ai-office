@@ -44,12 +44,18 @@ cron.schedule("0 10 * * *", () => {
   runScript("advisor.js");
 });
 
-// ── Discord бот ──
+// ── Discord боты ──
 if (process.env.DISCORD_TOKEN_STIK) {
   runScript("discord-bot.js");
-  console.log("🤖 Discord бот запущен");
+  console.log("🤖 Офис бот запущен");
 } else {
-  console.log("⚠️ DISCORD_TOKEN_STIK не найден, Discord бот пропущен");
+  console.log("⚠️ DISCORD_TOKEN_STIK не найден");
+}
+if (process.env.DISCORD_TOKEN_DEV) {
+  runScript("discord-dev.js");
+  console.log("💻 Девелопер бот запущен");
+} else {
+  console.log("⚠️ DISCORD_TOKEN_DEV не найден");
 }
 
 // ── Life-sim (встроенный, лёгкий) ──
