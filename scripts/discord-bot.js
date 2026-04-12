@@ -98,12 +98,27 @@ client.on("ready", () => {
   client.user.setActivity("AI Office | !помощь");
 });
 
+// Активный бот по каналу: {channelId: "office" | "dev" | null}
+const activeBot = new Map();
+
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   const content = message.content.trim();
 
-  // Офис отвечает только на ! команды или когда @упомянут
-  if (!content.startsWith("!") && !message.mentions.has(client.user)) return;
+  // Если упомянут этот бот — активируем его на канале
+  if (message.mentions.has(client.user)) {
+    activeBot.set(message.channel.id, "office");
+  }
+  // Если упомянут другой бот — деактивируем этого
+  const otherBotMentioned = message.mentions.users.some(u => u.bot && u.id !== client.user.id);
+  if (otherBotMentioned) {
+    activeBot.delete(message.channel.id);
+    return;
+  }
+
+  // Отвечаем если: ! команда, @упомянут, или этот бот активен на канале
+  const isActive = activeBot.get(message.channel.id) === "office";
+  if (!content.startsWith("!") && !message.mentions.has(client.user) && !isActive) return;
 
   // Если @упомянут — преобразуем текст в команду
   let cmd = content;

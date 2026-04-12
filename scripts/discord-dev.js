@@ -69,13 +69,28 @@ client.on("ready", () => {
   client.user.setActivity("пиши что угодно");
 });
 
+// Активный бот по каналу
+const activeBot = new Map();
+
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   const content = message.content.trim();
   if (!content) return;
 
-  // Девелопер отвечает только когда @упомянут
-  if (!message.mentions.has(client.user)) return;
+  // Если упомянут этот бот — активируем
+  if (message.mentions.has(client.user)) {
+    activeBot.set(message.channel.id, "dev");
+  }
+  // Если упомянут другой бот — деактивируем
+  const otherBotMentioned = message.mentions.users.some(u => u.bot && u.id !== client.user.id);
+  if (otherBotMentioned) {
+    activeBot.delete(message.channel.id);
+    return;
+  }
+
+  // Отвечаем если @упомянут или активен на канале
+  const isActive = activeBot.get(message.channel.id) === "dev";
+  if (!message.mentions.has(client.user) && !isActive) return;
 
   await message.channel.sendTyping();
   addH(message.channel.id, "user", content);
