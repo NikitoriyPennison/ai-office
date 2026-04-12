@@ -16,6 +16,8 @@ if (fs.existsSync(envPath)) {
 }
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
+if (GROQ_API_KEY) console.log("✅ Groq API key found (" + GROQ_API_KEY.substring(0, 8) + "...)");
+else console.log("⚠️ No GROQ_API_KEY in env");
 const GROQ_MODEL = "llama-3.1-8b-instant";
 const OLLAMA_URL = "http://localhost:11434";
 

@@ -91,9 +91,28 @@ client.on("messageCreate", async (message) => {
 
   try {
     // Определяем намерение
-    const intentR = await generate(`Определи намерение. Ответь ОДНИМ словом из: status, logs, deploy, read_file, edit_file, create_file, add_agent, run_script, chat
+    const intentR = await generate(`Определи намерение пользователя. Ответь ОДНИМ словом.
 
-Скрипты: ${scripts}
+Варианты:
+- chat — приветствие, вопрос, разговор, всё что не подходит к другим
+- status — спрашивает статус агентов/ботов
+- logs — хочет увидеть логи/историю
+- deploy — хочет задеплоить/запушить изменения
+- read_file — хочет прочитать/показать файл
+- edit_file — хочет изменить/отредактировать файл
+- create_file — хочет создать новый файл
+- add_agent — хочет добавить нового бота/агента
+- run_script — хочет запустить скрипт/отчёт/видео
+
+Примеры:
+"привет" → chat
+"как дела" → chat
+"покажи статус" → status
+"открой файл scheduler.js" → read_file
+"задеплой" → deploy
+"запусти отчёт" → run_script
+"добавь бота маркетолога" → add_agent
+
 Сообщение: "${content}"
 Одно слово:`);
 
