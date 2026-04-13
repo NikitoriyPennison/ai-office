@@ -213,15 +213,30 @@ client.on("messageCreate", async (message) => {
 
     // === ADD AGENT ===
     if (intent === "add_agent") {
-      const aR = await generate(`Из "${content}" извлеки JSON: {"id":"latin_id","name":"имя","emoji":"эмодзи","role":"роль"}\nТолько JSON:`);
+      const cleanMsg = content.replace(/<@!?\d+>/g, "").trim();
+      const aR = await generate(`Пользователь хочет создать нового AI-агента (бота) для офиса.
+
+Его сообщение: "${cleanMsg}"
+
+На основе сообщения придумай подходящие данные для агента. Ответь СТРОГО JSON:
+{"id":"latin_id_lowercase","name":"Имя на русском","emoji":"один эмодзи","role":"краткая роль","description":"что делает агент, 1 предложение"}
+
+Правила:
+- id должен быть на латинице, одно слово, строчными буквами
+- name — красивое имя на русском
+- emoji — один подходящий эмодзи
+- role — краткое описание роли (3-5 слов)
+- description — подробнее что делает
+
+Только JSON, без пояснений.`);
       try {
         const info = JSON.parse(aR.text.match(/\{[\s\S]*\}/)[0]);
         const db = new Database(DB_PATH);
         db.prepare("INSERT OR REPLACE INTO agents (id,name,emoji,role,description,current_status) VALUES (?,?,?,?,?,'idle')")
           .run(info.id, info.name, info.emoji, info.role, info.description || "");
         db.close();
-        message.reply(`✅ Агент: ${info.emoji} **${info.name}** — ${info.role}`);
-      } catch (e) { message.reply(`❌ ${e.message}`); }
+        message.reply(`✅ Агент создан!\n\n${info.emoji} **${info.name}**\n📋 Роль: ${info.role}\n📝 ${info.description}\n🆔 ID: \`${info.id}\``);
+      } catch (e) { message.reply(`❌ Не удалось создать агента: ${e.message}`); }
       return;
     }
 
