@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Public routes — no auth required
 const PUBLIC_PATHS = [
+  "/tma",
   "/office/stream",
   "/overlay",
   "/stream-voice",           // voice monitor page
@@ -49,7 +50,7 @@ export function middleware(request: NextRequest) {
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   response.headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws: wss:; font-src 'self';"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws: wss:; font-src 'self';"
   );
 
   // Rate limit API endpoints

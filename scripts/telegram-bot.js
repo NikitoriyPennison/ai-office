@@ -41,6 +41,8 @@ if (!TOKEN) {
   process.exit(1);
 }
 
+const WEBAPP_URL = process.env.WEBAPP_URL || "https://ai-office-production-70f8.up.railway.app/tma";
+
 const bot = new TelegramBot(TOKEN, { polling: true });
 
 // Активные чаты: {chatId: true} — бот активен после @упоминания
@@ -133,9 +135,28 @@ bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
   activeChats.set(chatId, true);
   await bot.sendMessage(chatId,
-    "🏢 *AI Office*\n\nПривет\\! Я управляю командой AI\\-агентов\\.\n\n" +
-    "Напиши /help для списка команд или просто пиши — отвечу через AI\\.",
-    { parse_mode: "MarkdownV2" }
+    "🏢 *AI Office*\n\nПривет! Я управляю командой AI-агентов.\n\nНапиши /help для списка команд или открой мини-приложение:",
+    {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "🏢 Открыть AI Office", web_app: { url: WEBAPP_URL } },
+        ]],
+      },
+    }
+  );
+});
+
+bot.onText(/\/app/, async (msg) => {
+  await bot.sendMessage(msg.chat.id,
+    "🏢 Открывай AI Office:",
+    {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "🏢 Открыть офис", web_app: { url: WEBAPP_URL } },
+        ]],
+      },
+    }
   );
 });
 
@@ -143,6 +164,7 @@ bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
   const text = [
     "🏢 *AI Office — Команды*\n",
+    "*/app* — открыть мини\\-приложение",
     "*/sayt* — ссылка на дашборд",
     "*/status* — статус всех агентов",
     "*/stik* — последний отчёт рынка 3D\\-печати",
