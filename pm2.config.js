@@ -13,5 +13,11 @@ module.exports = {
       cwd: __dirname,
       env: { NODE_ENV: "production" },
     },
+    {
+      name: "ai-office-telegram",
+      script: "scripts/telegram-bot.js",
+      cwd: __dirname,
+      env: { NODE_ENV: "production" },
+    },
   ],
 };

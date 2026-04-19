@@ -21,6 +21,7 @@
     "drizzle-orm": "^0.38.4",
     "jsonwebtoken": "^9.0.2",
     "next": "^15.1.0",
+    "node-telegram-bot-api": "^0.67.0",
     "pixi.js": "8.6.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
