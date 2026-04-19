@@ -44,16 +44,24 @@ cron.schedule("0 10 * * *", () => {
   runScript("advisor.js");
 });
 
+// ── Telegram бот ──
+if (process.env.TELEGRAM_TOKEN) {
+  runScript("telegram-bot.js");
+  console.log("🤖 Telegram бот запущен");
+} else {
+  console.log("⚠️ TELEGRAM_TOKEN не найден");
+}
+
 // ── Discord боты ──
 if (process.env.DISCORD_TOKEN_STIK) {
   runScript("discord-bot.js");
-  console.log("🤖 Офис бот запущен");
+  console.log("🤖 Discord офис бот запущен");
 } else {
   console.log("⚠️ DISCORD_TOKEN_STIK не найден");
 }
 if (process.env.DISCORD_TOKEN_DEV) {
   runScript("discord-dev.js");
-  console.log("💻 Девелопер бот запущен");
+  console.log("💻 Discord девелопер бот запущен");
 } else {
   console.log("⚠️ DISCORD_TOKEN_DEV не найден");
 }
