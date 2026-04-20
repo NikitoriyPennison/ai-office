@@ -9,6 +9,7 @@
  *   /sovetnik     — белый список советника
  *   /otchet       — запустить новый отчёт
  *   /bloger тема  — создать видео
+ *   /scenar тема  — написать сценарий через Claude
  *   /nadziratel задание — дать задание команде
  *
  * Также понимает естественный язык — @упоминание или личные сообщения.
@@ -171,6 +172,7 @@ bot.onText(/\/help/, async (msg) => {
     "*/sovetnik* — белый список советника",
     "*/otchet* — запустить новый анализ рынка",
     "*/bloger* `тема` — создать TikTok видео",
+    "*/scenar* `тема` — написать сценарий через Claude",
     "*/nadziratel* `задание` — дать задание команде",
     "",
     "💻 *Девелопер:*",
@@ -262,6 +264,28 @@ bot.onText(/\/bloger(.*)/, async (msg, match) => {
       if (scripts[0]) {
         await bot.sendDocument(chatId, path.join(scriptsDir, scripts[0]), {}, { filename: "сценарий.json" }).catch(() => {});
       }
+    }
+  } catch {}
+});
+
+bot.onText(/\/scenar(.*)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const topic = (match[1] || "").trim();
+  await bot.sendMessage(chatId, `✍️ Сценарист думает${topic ? ": " + topic : " (выбирает тему)"}...`);
+  const args = topic ? [topic] : [];
+  const result = await runScript("scriptwriter.js", args);
+  await bot.sendMessage(
+    chatId,
+    result.code === 0
+      ? `✍️ Сценарий готов!\n\n${truncate(result.output, 3000)}`
+      : `❌ Ошибка:\n${truncate(result.output, 1000)}`
+  );
+  // Отправить файл сценария
+  try {
+    const scriptsDir = path.join(__dirname, "../content/scripts");
+    if (fs.existsSync(scriptsDir)) {
+      const scripts = fs.readdirSync(scriptsDir).filter(f => f.endsWith(".json")).sort().reverse();
+      if (scripts[0]) await bot.sendDocument(chatId, path.join(scriptsDir, scripts[0]), {}, { filename: scripts[0] }).catch(() => {});
     }
   } catch {}
 });

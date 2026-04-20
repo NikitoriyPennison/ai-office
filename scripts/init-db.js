@@ -55,6 +55,7 @@ const agents = [
   ["tema", "Блогер", "🎬", "TikTok блогер", "Создаёт видео про 3D-печать"],
   ["stoyanov", "Надзиратель", "👁️", "Менеджер задач", "Принимает указания, распределяет задания"],
   ["volodya", "Девелопер", "💻", "Разработчик", "Читает код, редактирует файлы, деплоит"],
+  ["scriptwriter", "Сценарист", "✍️", "Контент-сценарист", "Создаёт TikTok сценарии про 3D-печать на базе Claude"],
 ];
 
 const insert = db.prepare("INSERT OR IGNORE INTO agents (id, name, emoji, role, description, current_status) VALUES (?, ?, ?, ?, ?, 'idle')");
