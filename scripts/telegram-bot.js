@@ -9,7 +9,7 @@
  *   /sovetnik     — белый список советника
  *   /otchet       — запустить новый отчёт
  *   /bloger тема  — создать видео
- *   /scenar тема  — написать сценарий через Claude
+ *   /kodex задача — написать код через Claude
  *   /nadziratel задание — дать задание команде
  *
  * Также понимает естественный язык — @упоминание или личные сообщения.
@@ -172,7 +172,7 @@ bot.onText(/\/help/, async (msg) => {
     "*/sovetnik* — белый список советника",
     "*/otchet* — запустить новый анализ рынка",
     "*/bloger* `тема` — создать TikTok видео",
-    "*/scenar* `тема` — написать сценарий через Claude",
+    "*/kodex* `задача` — написать код через Claude",
     "*/nadziratel* `задание` — дать задание команде",
     "",
     "💻 *Девелопер:*",
@@ -268,24 +268,27 @@ bot.onText(/\/bloger(.*)/, async (msg, match) => {
   } catch {}
 });
 
-bot.onText(/\/scenar(.*)/, async (msg, match) => {
+bot.onText(/\/kodex(.*)/, async (msg, match) => {
   const chatId = msg.chat.id;
-  const topic = (match[1] || "").trim();
-  await bot.sendMessage(chatId, `✍️ Сценарист думает${topic ? ": " + topic : " (выбирает тему)"}...`);
-  const args = topic ? [topic] : [];
-  const result = await runScript("scriptwriter.js", args);
+  const task = (match[1] || "").trim();
+  if (!task) {
+    await bot.sendMessage(chatId, "⚡ Укажи задачу:\n`/kodex парсер цен с Wildberries на Python`", { parse_mode: "Markdown" });
+    return;
+  }
+  await bot.sendMessage(chatId, `⚡ Кодекс пишет код: _${task}_`, { parse_mode: "Markdown" });
+  const result = await runScript("codex.js", [task]);
   await bot.sendMessage(
     chatId,
     result.code === 0
-      ? `✍️ Сценарий готов!\n\n${truncate(result.output, 3000)}`
+      ? `⚡ Код готов!\n\n${truncate(result.output, 3000)}`
       : `❌ Ошибка:\n${truncate(result.output, 1000)}`
   );
-  // Отправить файл сценария
+  // Отправить файл с кодом
   try {
-    const scriptsDir = path.join(__dirname, "../content/scripts");
-    if (fs.existsSync(scriptsDir)) {
-      const scripts = fs.readdirSync(scriptsDir).filter(f => f.endsWith(".json")).sort().reverse();
-      if (scripts[0]) await bot.sendDocument(chatId, path.join(scriptsDir, scripts[0]), {}, { filename: scripts[0] }).catch(() => {});
+    const codeDir = path.join(__dirname, "../content/code");
+    if (fs.existsSync(codeDir)) {
+      const files = fs.readdirSync(codeDir).filter(f => !f.endsWith(".meta.json")).sort().reverse();
+      if (files[0]) await bot.sendDocument(chatId, path.join(codeDir, files[0]), {}, { filename: files[0] }).catch(() => {});
     }
   } catch {}
 });

@@ -55,7 +55,7 @@ const agents = [
   ["tema", "Блогер", "🎬", "TikTok блогер", "Создаёт видео про 3D-печать"],
   ["stoyanov", "Надзиратель", "👁️", "Менеджер задач", "Принимает указания, распределяет задания"],
   ["volodya", "Девелопер", "💻", "Разработчик", "Читает код, редактирует файлы, деплоит"],
-  ["scriptwriter", "Сценарист", "✍️", "Контент-сценарист", "Создаёт TikTok сценарии про 3D-печать на базе Claude"],
+  ["codex", "Кодекс", "⚡", "Разработчик-кодогенератор", "Пишет код для любых задач на базе Claude"],
 ];
 
 const insert = db.prepare("INSERT OR IGNORE INTO agents (id, name, emoji, role, description, current_status) VALUES (?, ?, ?, ?, ?, 'idle')");
@@ -97,6 +97,7 @@ if (!fs.existsSync(configPath)) {
 // Reports dirs
 fs.mkdirSync(path.join(process.cwd(), "reports", "whitelist"), { recursive: true });
 fs.mkdirSync(path.join(process.cwd(), "content", "scripts"), { recursive: true });
+fs.mkdirSync(path.join(process.cwd(), "content", "code"), { recursive: true });
 
 db.close();
 console.log("DB initialized with", agents.length, "agents");
